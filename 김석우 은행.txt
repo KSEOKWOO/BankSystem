@@ -1,0 +1,223 @@
+package kr.ac.kopo.bank;
+
+import java.text.DecimalFormat;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+public class BankMain {
+    private static Account[] accountArray = new Account[100];
+    private static Scanner sc = new Scanner(System.in);
+    private static final String PREFIX = "1002-052-";
+    private static int seq = 0; // 계좌번호 자동발번
+    private static boolean isCreated = false; // 계좌등록여부 
+
+    public static void main(String[] args) {
+        boolean run = true;
+        while (run) {
+            System.out.println("---------------------------------------------");
+            System.out.println("1.계좌생성 | 2.계좌목록 | 3.입금 | 4.출금 | 5.종료");
+            System.out.println("---------------------------------------------");
+            System.out.print("선택 : ");
+            try {
+                int selectNo = sc.nextInt();
+                switch (selectNo) {
+                    case 1:
+                        createAccount();
+                        break;
+                    case 2:
+                        accountList();
+                        break;
+                    case 3:
+                        deposit();
+                        break;
+                    case 4:
+                        withdraw();
+                        break;
+                    case 5:
+                        run = false;
+                        break;
+                    default:
+                        System.out.println("잘못된 선택입니다. 다시 입력해주세요.");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("잘못된 입력입니다. 숫자를 입력해주세요.");
+                sc.next(); // 잘못된 입력을 소비하여 무한 루프 방지
+            }
+        }
+        System.out.println("프로그램 종료");
+    }
+
+    private static void withdraw() {
+        if (!isRegistered()) {
+            System.out.println("계좌등록을 먼저 하세요");
+            return;
+        }
+
+        accountList();
+
+        Account account = selectAccount("출금할 계좌번호를 선택하세요 : ");
+        if (account == null) return;
+
+        System.out.print("출금할 금액을 입력하세요 : ");
+        try {
+            int amount = sc.nextInt();
+            int result = account.withdraw(amount);
+            System.out.println("출금액 : " + result);
+        } catch (InputMismatchException e) {
+            System.out.println("잘못된 입력입니다. 숫자를 입력해주세요.");
+            sc.next(); // 잘못된 입력을 소비하여 무한 루프 방지
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private static void deposit() {
+        if (!isRegistered()) {
+            System.out.println("계좌등록을 먼저 하세요");
+            return;
+        }
+
+        accountList();
+
+        Account account = selectAccount("입금할 계좌번호를 선택하세요 : ");
+        if (account == null) return;
+
+        System.out.print("입금할 금액을 입력하세요 : ");
+        try {
+            int amount = sc.nextInt();
+            account.deposit(amount);
+            System.out.println("입금 성공!!!");
+        } catch (InputMismatchException e) {
+            System.out.println("잘못된 입력입니다. 숫자를 입력해주세요.");
+            sc.next(); // 잘못된 입력을 소비하여 무한 루프 방지
+        }
+    }
+
+    public static void accountList() {
+        if (!isRegistered()) {
+            System.out.println("계좌등록을 먼저 하세요");
+            return;
+        }
+        for (Account account : accountArray) {
+            if (account != null) {
+                System.out.println("계좌번호 : " + account.getAno());
+                System.out.println("고객명 : " + account.getOwner());
+                System.out.println("잔액 : " + account.getBalance());
+                System.out.println();
+            }
+        }
+    }
+
+    private static void createAccount() {
+    	// 1002-052	-000000, 김석우, 100000
+        String ano = PREFIX + String.format(new DecimalFormat("000000").format(++seq));
+        System.out.print("소유주명 : ");
+        String owner = sc.next();
+        System.out.print("초기 입금액 : ");
+        try {
+            int amount = sc.nextInt();
+            for (int i = 0; i < accountArray.length; i++) {
+                if (accountArray[i] == null) {
+                    accountArray[i] = new Account(ano, owner, amount);
+                    System.out.println("계좌 등록 성공!!!");
+                    isCreated = true;
+                    break;
+                }
+            }
+        } catch (InputMismatchException e) {
+            System.out.println("잘못된 입력입니다. 숫자를 입력해주세요.");
+            sc.next(); // 잘못된 입력을 소비하여 무한 루프 방지
+        }
+    }
+
+    private static boolean isRegistered() {
+        return isCreated;
+    }
+
+    private static Account findAccount(String ano) {
+        for (Account account : accountArray) {
+            if (account != null && account.getAno().equals(ano)) {
+                return account;
+            }
+        }
+        return null;
+    }
+
+    private static Account selectAccount(String message) {
+        System.out.print(message);
+        while (true) {
+            String ano = sc.next();
+            Account account = findAccount(ano);
+            if (account == null) {
+                System.out.println("계좌번호를 확인하세요 : ");
+            } else {
+                return account;
+            }
+        }
+    }
+}
+
+package kr.ac.kopo.bank;
+
+public class Account {
+	// 필드
+	private String ano; // 계좌번호
+	private String owner; // 소유자
+	private int balance; // 잔고
+
+	// 생성자
+	public Account(String ano, String owner, int balance) {
+		this.ano = ano;
+		this.owner = owner;
+		this.balance = balance;
+	}
+
+	// 메소드
+	protected String getAno() {
+		return ano;
+	}
+
+	protected void setAno(String ano) {
+		this.ano = ano;
+	}
+
+	protected String getOwner() {
+		return owner;
+	}
+
+	protected void setOwner(String owner) {
+		this.owner = owner;
+	}
+
+	protected int getBalance() {
+		return balance;
+	}
+
+	protected void setBalance(int balance) {
+		this.balance = balance;
+	}
+
+	public void deposit(int amount) throws IllegalArgumentException {
+		if (amount <= 0) {
+			throw new IllegalArgumentException("입금 금액은 0보다 커야 합니다.");
+		}
+		this.balance += amount;
+	}
+
+	public int withdraw(int amount) throws Exception {
+		if (amount <= 0) {
+			throw new IllegalArgumentException("출금 금액은 0보다 커야 합니다.");
+		}
+		if (this.balance < amount) {
+			throw new Exception("잔액이 모자랍니다.");
+		} else {
+			this.balance -= amount;
+			return amount;
+		}
+	}
+
+	// 계좌 정보 출력 메소드
+	public void printAccountInfo() {
+		System.out.println("계좌번호: " + ano + ", 소유자: " + owner + ", 잔고: " + balance);
+	}
+}
